@@ -129,7 +129,8 @@ check_source_files >> extract_load >> dbt_run >> dbt_test >> report >> export_cs
 - `make test`: `PASS=24 WARN=1 ERROR=0` (the 1 warning is the expected
   `order_date` warning from Part B, question 3)
 - `make run-dag`: all 6 tasks `success`; `export_csv` log:
-  `Wrote 62 rows to data/export/monthly_revenue.csv`
+  `Wrote 62 rows to data/export/monthly_revenue.csv` (62 rows with the July file
+  from `make new-day`; 53 rows with only the January–June data)
 
 Example output, `mart_revenue_growth`:
 
