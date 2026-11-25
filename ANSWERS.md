@@ -59,6 +59,28 @@ lineage graph in `make docs` shows this graph.
 
 ---
 
+## Part C — Let Airflow run it
+
+The `retail_pipeline` DAG was un-paused and triggered; all 5 tasks finished
+green: `check_source_files → extract_load → dbt_run → dbt_test → report`.
+
+- **Report log (step 3):** the `report` task prints the monthly revenue per
+  category from `dw.mart_monthly_revenue`, e.g. `2024-01 | Electronics | 59,950,000`.
+- **XCom (step 4):** `extract_load` returns the row counts it loaded:
+  `{"customers": 20, "products": 10, "sales": 244}`.
+- **Schedule (step 5):** `schedule="@daily"` (cron `0 0 * * *`, once a day at
+  midnight), with `catchup=False` so Airflow does not re-run every missed day
+  since `start_date`.
+- **Retries (step 5):** `default_args` gives every task `retries: 1` with
+  `retry_delay` of 20 seconds. `dbt_test` overrides this with `retries=0`,
+  because a failed data test will not fix itself.
+- **Task order (step 5):** `loaded >> dbt_run >> dbt_test >> report()`. The
+  `>>` operator sets the dependencies; `extract_load(check_source_files())`
+  links the first two tasks by passing the file list between them (TaskFlow).
+  After Part E the line ends `... >> report() >> export_csv()`.
+
+---
+
 ## Part D — Automation in action
 
 ### Scenario 1 — new data arrives
