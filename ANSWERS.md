@@ -61,7 +61,7 @@ lineage graph in `make docs` shows this graph.
 
 ## Part C — Let Airflow run it
 
-The `retail_pipeline` DAG was un-paused and triggered; all 5 tasks finished
+The `retail_pipeline` DAG ran (`make run-dag`, or Trigger in the UI); all 5 tasks finished
 green: `check_source_files → extract_load → dbt_run → dbt_test → report`.
 
 - **Report log (step 3):** the `report` task prints the monthly revenue per
