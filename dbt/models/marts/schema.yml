@@ -11,6 +11,10 @@ models:
     columns:
       - name: product_id
         tests: [unique, not_null]
+      - name: category                # Part E exercise 5: only known categories allowed
+        tests:
+          - accepted_values:
+              arguments: {values: ['Electronics', 'Furniture', 'Accessories']}
 
   - name: dim_date
     columns:
@@ -36,3 +40,22 @@ models:
           - not_null
           - relationships:            # no orphan products
               arguments: {to: ref('dim_product'), field: product_id}
+
+  # ---- Part E -------------------------------------------------------------
+  - name: mart_top5_products_per_category
+    columns:
+      - name: rank_in_category
+        tests:
+          - not_null
+          - accepted_values:          # a top-5 list can only have ranks 1..5
+              arguments: {values: [1, 2, 3, 4, 5], quote: false}
+
+  - name: mart_revenue_growth
+    columns:
+      - name: ym
+        tests: [unique, not_null]
+
+  - name: mart_top_customers
+    columns:
+      - name: customer_id
+        tests: [unique, not_null]

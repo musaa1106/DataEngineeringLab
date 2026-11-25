@@ -3,12 +3,13 @@ Lab 12 - Data Pipeline Automation
 =================================
 The Practice 10 script, split into tasks and run by Airflow on a schedule.
 
-    check_source_files >> extract_load >> dbt_run >> dbt_test >> report
+    check_source_files >> extract_load >> dbt_run >> dbt_test >> report >> export_csv
 
   E + L : scripts/extract_load.py   (CSV  -> DuckDB raw.*)
   T     : dbt run                   (raw  -> staging.* -> dw.* star schema)
   QC    : dbt test                  (replaces the hand-written qc = {...} checks)
   Report: print the monthly revenue table into the task log
+  Export: write dw.mart_monthly_revenue to data/export/monthly_revenue.csv
 """
 from __future__ import annotations
 
@@ -25,6 +26,7 @@ LAB_HOME = Path(os.environ.get("LAB_HOME", Path(__file__).resolve().parents[1]))
 RAW_DIR = LAB_HOME / "data" / "raw"
 DBT_DIR = LAB_HOME / "dbt"
 DB_PATH = LAB_HOME / "warehouse" / "retail.duckdb"
+EXPORT_DIR = LAB_HOME / "data" / "export"
 
 sys.path.insert(0, str(LAB_HOME / "scripts"))  # so we can import extract_load.py
 
@@ -96,8 +98,27 @@ def retail_pipeline():
         finally:
             con.close()
 
+    @task
+    def export_csv() -> str:
+        """Part E exercise 6: hand the mart to the business as a CSV file."""
+        import duckdb
+
+        EXPORT_DIR.mkdir(parents=True, exist_ok=True)
+        out = EXPORT_DIR / "monthly_revenue.csv"
+        con = duckdb.connect(str(DB_PATH), read_only=True)
+        try:
+            con.execute(
+                f"COPY (SELECT * FROM dw.mart_monthly_revenue ORDER BY ym, revenue DESC) "
+                f"TO '{out}' (HEADER, DELIMITER ',')"
+            )
+            rows = con.execute(f"SELECT count(*) FROM read_csv_auto('{out}')").fetchone()[0]
+        finally:
+            con.close()
+        print(f"Wrote {rows} rows to {out}")
+        return str(out)                    # file path -> XCom
+
     loaded = extract_load(check_source_files())
-    loaded >> dbt_run >> dbt_test >> report()
+    loaded >> dbt_run >> dbt_test >> report() >> export_csv()
 
 
 retail_pipeline()
